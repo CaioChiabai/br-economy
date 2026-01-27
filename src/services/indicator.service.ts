@@ -5,7 +5,6 @@ import { cacheService } from './cache.service';
 
 class IndicatorService {
   private bcbClient: AxiosInstance;
-  private ibgeClient: AxiosInstance;
   
   // BCB (Banco Central do Brasil) codes for indicators
   private readonly indicatorCodes = {
@@ -27,14 +26,6 @@ class IndicatorService {
   constructor() {
     this.bcbClient = axios.create({
       baseURL: config.externalApi.bcbUrl,
-      timeout: config.externalApi.timeout,
-      headers: {
-        'Accept': 'application/json',
-      }
-    });
-    
-    this.ibgeClient = axios.create({
-      baseURL: config.externalApi.ibgeUrl,
       timeout: config.externalApi.timeout,
       headers: {
         'Accept': 'application/json',

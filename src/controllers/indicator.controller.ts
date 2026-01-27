@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { indicatorService } from '../services/indicator.service';
 import { IndicatorType, IndicatorResponse } from '../types';
 import { AppError } from '../middlewares/error.middleware';
+import { isValidDate } from '../utils/date.utils';
 
 export class IndicatorController {
   async getIndicator(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -15,6 +16,14 @@ export class IndicatorController {
       }
       
       const indicatorType = type as IndicatorType;
+      
+      // Validate date formats if provided
+      if (startDate && typeof startDate === 'string' && !isValidDate(startDate)) {
+        throw new AppError('Invalid startDate format. Use DD/MM/YYYY', 400);
+      }
+      if (endDate && typeof endDate === 'string' && !isValidDate(endDate)) {
+        throw new AppError('Invalid endDate format. Use DD/MM/YYYY', 400);
+      }
       
       const result = await indicatorService.getIndicator(
         indicatorType,

@@ -25,7 +25,12 @@ export const errorHandler = (
     });
   }
 
-  console.error('ERROR:', err);
+  // Log detailed errors only in development
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('ERROR:', err);
+  } else {
+    console.error('ERROR:', err.message);
+  }
   
   res.status(500).json({
     status: 'error',

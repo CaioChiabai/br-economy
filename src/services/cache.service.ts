@@ -8,7 +8,7 @@ class CacheService {
     this.cache = new NodeCache({ 
       stdTTL: 3600,
       checkperiod: 600,
-      useClones: false
+      useClones: true  // Clone objects to prevent cache pollution
     });
   }
   
