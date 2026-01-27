@@ -1,4 +1,4 @@
-﻿namespace BrEconomy.API.Entities
+﻿namespace BrEconomy.API.Domain.Entities
 {
     public class EconomicIndicator
     {

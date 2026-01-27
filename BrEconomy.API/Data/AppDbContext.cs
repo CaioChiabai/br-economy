@@ -1,4 +1,4 @@
-﻿using BrEconomy.API.Entities;
+﻿using BrEconomy.API.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BrEconomy.API.Data
