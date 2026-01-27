@@ -1,5 +1,6 @@
 using BrEconomy.API.Data;
 using Microsoft.EntityFrameworkCore;
+using BrEconomy.API.Features.Selic;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "BrEconomy_";
 });
 
+// --- 3. Configuração do HttpClient ---
+builder.Services.AddHttpClient("BancoCentral", client =>
+{
+    client.BaseAddress = new Uri("https://api.bcb.gov.br/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHostedService<SelicUpdateJob>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
