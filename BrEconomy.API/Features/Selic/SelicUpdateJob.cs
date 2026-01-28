@@ -25,69 +25,97 @@ public class SelicUpdateJob : BackgroundService
         _logger = logger;
     }
 
+    private record BcbDto(string data, string valor);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                _logger.LogInformation("🔄 Iniciando atualização da Selic...");
-
                 // 1. Busca dados no Banco Central
                 var client = _httpClientFactory.CreateClient("BancoCentral");
 
                 // Código 432 = Meta Selic
                 var response = await client.GetAsync("dados/serie/bcdata.sgs.432/dados/ultimos/1?formato=json", stoppingToken);
+                response.EnsureSuccessStatusCode(); // Lança exceção se não for 2xx
 
-                if (response.IsSuccessStatusCode)
+                var conteudo = await response.Content.ReadAsStringAsync(stoppingToken);
+                var dadosBcb = JsonSerializer.Deserialize<List<BcbDto>>(conteudo)?.FirstOrDefault();
+
+                if (dadosBcb == null)
                 {
-                    var conteudo = await response.Content.ReadAsStringAsync(stoppingToken);
-                    var dadosBcb = JsonSerializer.Deserialize<List<BcbDto>>(conteudo)?.FirstOrDefault();
-
-                    if (dadosBcb != null && double.TryParse(dadosBcb.valor, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double valorSelic))
-                    {
-                        // 2. Salva no Banco de Dados (Postgres)
-                        await SalvarNoBanco(valorSelic, dadosBcb.data);
-
-                        // 3. Atualiza o Cache (Redis)
-                        await SalvarNoCache(valorSelic, dadosBcb.data);
-
-                        _logger.LogInformation($"✅ Selic atualizada: {valorSelic}%");
-                    }
+                    _logger.LogWarning("Resposta do BCB está vazia ou inválida");
+                }
+                else if (!double.TryParse(dadosBcb.valor, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double valorSelic))
+                {
+                    _logger.LogWarning($"Não foi possível converter o valor: {dadosBcb.valor}");
                 }
                 else
                 {
-                    _logger.LogWarning($"⚠️ Falha ao buscar Selic. Status: {response.StatusCode}");
+                    await SalvarNoBanco(valorSelic, dadosBcb.data);
+
+                    await SalvarNoCache(valorSelic, dadosBcb.data);
+
+                    _logger.LogInformation($"Selic atualizada: {valorSelic}% (Data: {dadosBcb.data})");
                 }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Erro de rede ao buscar dados do BCB. Tentando novamente em 24h");
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogWarning(ex, "Timeout ao buscar dados do BCB (mais de 30s). Tentando novamente em 24h");
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Erro ao deserializar resposta do BCB. Formato JSON inválido");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Erro crítico ao atualizar Selic");
+                _logger.LogError(ex, "Erro inesperado ao atualizar Selic");
             }
-
-            // Dorme por 24 horas antes de tentar de novo
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            finally
+            {
+                _logger.LogInformation("Próxima atualização em 24 horas...");
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            }
         }
     }
 
     private async Task SalvarNoBanco(double valor, string dataReferencia)
     {
-        // Precisamos criar um escopo manual porque o DbContext é 'Scoped' e o Job é 'Singleton'
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var indicador = await context.EconomicIndicators
             .FirstOrDefaultAsync(i => i.Name == "SELIC");
 
-        if (indicador == null)
+        var isNovoIndicador = indicador == null;
+        if (isNovoIndicador)
         {
+            _logger.LogInformation("Criando primeiro registro da SELIC no banco...");
             indicador = new EconomicIndicator { Name = "SELIC" };
             context.EconomicIndicators.Add(indicador);
         }
 
         indicador.Value = (decimal)valor;
-        indicador.ReferenceDate = DateTime.SpecifyKind(DateTime.Parse(dataReferencia), DateTimeKind.Utc); indicador.LastUpdated = DateTime.UtcNow;
+        
+        if (!DateTime.TryParse(dataReferencia, out var dataParsed))
+        {
+            var mensagem = $"Data inválida retornada pelo BCB: '{dataReferencia}'. Abortando atualização.";
+            _logger.LogError(mensagem);
+            throw new InvalidOperationException(mensagem);
+        }
+        
+        indicador.ReferenceDate = DateTime.SpecifyKind(dataParsed, DateTimeKind.Utc);
+        indicador.LastUpdated = DateTime.UtcNow;
+        
         await context.SaveChangesAsync();
+        _logger.LogInformation($"Selic salva no PostgreSQL (ID: {indicador.Id}, Ação: {(isNovoIndicador ? "Criado" : "Atualizado")})");
     }
 
     private async Task SalvarNoCache(double valor, string dataReferencia)
@@ -101,10 +129,13 @@ public class SelicUpdateJob : BackgroundService
 
         var json = JsonSerializer.Serialize(cacheData);
 
-        // Salva no Redis (chave "indicador:selic")
-        await _cache.SetStringAsync("indicador:selic", json);
-    }
+        // Configurações do cache: expira em 25 horas (1h a mais que o ciclo de atualização)
+        var opcoes = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(25)
+        };
 
-    // Classe auxiliar interna para ler o JSON do governo
-    private record BcbDto(string data, string valor);
+        await _cache.SetStringAsync("indicador:selic", json, opcoes);
+        _logger.LogInformation("Selic salva no Redis Cache (Expira em: 25h)");
+    }
 }
