@@ -1,6 +1,9 @@
 using BrEconomy.API.Data;
 using Microsoft.EntityFrameworkCore;
-using BrEconomy.API.Features.Selic;
+using BrEconomy.API.Features.Selic.Job;
+using BrEconomy.API.Features.Dolar.Job;
+using BrEconomy.API.Features.IPCA.Job;
+using BrEconomy.API.Features.CDI.Job;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +27,12 @@ builder.Services.AddHttpClient("BancoCentral", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-builder.Services.AddHostedService<SelicUpdateJob>();
+builder.Services.AddHostedService<SelicCurrentJob>();
+builder.Services.AddHostedService<DolarCurrentJob>();
+builder.Services.AddHostedService<IpcaYtdJob>();
+builder.Services.AddHostedService<Ipca12MJob>();
+builder.Services.AddHostedService<CdiYtdJob>();
+builder.Services.AddHostedService<Cdi12MJob>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

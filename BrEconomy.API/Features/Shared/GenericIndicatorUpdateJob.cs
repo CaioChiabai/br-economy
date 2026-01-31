@@ -1,6 +1,6 @@
 ﻿using BrEconomy.API.Data;
 using BrEconomy.API.Domain.Entities;
-using BrEconomy.API.Features.Selic;
+using BrEconomy.API.Features.Selic.Job;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
@@ -13,7 +13,7 @@ namespace BrEconomy.API.Features.Shared
         protected readonly IServiceProvider _serviceProvider;
         protected readonly IHttpClientFactory _httpClientFactory;
         protected readonly IDistributedCache _cache;
-        protected readonly ILogger<SelicUpdateJob> _logger;
+        protected readonly ILogger _logger;
 
         protected abstract string Name { get; }
         protected abstract string Url { get; }
@@ -25,7 +25,7 @@ namespace BrEconomy.API.Features.Shared
             IServiceProvider serviceProvider,
             IHttpClientFactory httpClientFactory,
             IDistributedCache cache,
-            ILogger<SelicUpdateJob> logger)
+            ILogger logger)
         {
             _serviceProvider = serviceProvider;
             _httpClientFactory = httpClientFactory;
