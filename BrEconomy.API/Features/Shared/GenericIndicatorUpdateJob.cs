@@ -25,7 +25,7 @@ namespace BrEconomy.API.Features.Shared
             IServiceProvider serviceProvider,
             IHttpClientFactory httpClientFactory,
             IDistributedCache cache,
-            ILogger logger)
+            ILogger<GenericIndicatorUpdateJob> logger)
         {
             _serviceProvider = serviceProvider;
             _httpClientFactory = httpClientFactory;

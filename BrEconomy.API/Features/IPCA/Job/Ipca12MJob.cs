@@ -14,7 +14,7 @@ namespace BrEconomy.API.Features.IPCA.Job
             IServiceProvider serviceProvider,
             IHttpClientFactory httpClientFactory,
             IDistributedCache cache,
-            ILogger logger)
+            ILogger<GenericIndicatorUpdateJob> logger)
             : base(serviceProvider, httpClientFactory, cache, logger)
         {
         }

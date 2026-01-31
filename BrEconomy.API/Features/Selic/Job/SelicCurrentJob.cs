@@ -13,7 +13,7 @@ public class SelicCurrentJob : GenericIndicatorUpdateJob
         IServiceProvider serviceProvider,
         IHttpClientFactory httpClientFactory,
         IDistributedCache cache,
-        ILogger logger)
+        ILogger<GenericIndicatorUpdateJob> logger)
         : base(serviceProvider, httpClientFactory, cache, logger)
     {
     }
