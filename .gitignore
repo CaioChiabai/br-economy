@@ -4,3 +4,4 @@ obj/
 docs/
 appsettings.Development.json
 *.user
+*.Backup.tmp
