@@ -22,7 +22,7 @@ public class SelicController : ControllerBase
     [HttpGet("current")]
     public async Task<IActionResult> GetCurrent()
     {
-        var cached = await _cache.GetStringAsync("indicador:selic");
+        var cached = await _cache.GetStringAsync("indicador:selic:current");
         if (!string.IsNullOrEmpty(cached))
         {
             return Ok(JsonSerializer.Deserialize<object>(cached));
