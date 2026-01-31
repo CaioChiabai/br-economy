@@ -22,38 +22,19 @@ public class SelicController : ControllerBase
     [HttpGet("current")]
     public async Task<IActionResult> GetCurrent()
     {
-        const string cacheKey = "indicador:selic";
-
-        // 1. Tenta pegar do Redis (Rápido: < 5ms)
-        var cachedData = await _cache.GetStringAsync(cacheKey);
-        if (!string.IsNullOrEmpty(cachedData))
+        var cached = await _cache.GetStringAsync("indicador:selic");
+        if (!string.IsNullOrEmpty(cached))
         {
-            // Se achou no cache, retorna direto. Nem encosta no Banco.
-            return Ok(JsonSerializer.Deserialize<object>(cachedData));
+            return Ok(JsonSerializer.Deserialize<object>(cached));
         }
 
-        // 2. Se não tem no Redis, busca no Postgres (Segurança)
-        var indicador = await _context.EconomicIndicators
-            .AsNoTracking() // Otimização para leitura
+        // Fallback: banco (só se Redis estiver fora)
+        var indicator = await _context.EconomicIndicators
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Name == "SELIC");
 
-        if (indicador == null)
-        {
-            return NotFound("Dados da Selic ainda não foram carregados.");
-        }
-
-        // 3. Opcional: Se achou no banco mas não no cache, salva no cache agora (Self-Healing)
-        // Isso garante que a próxima requisição seja rápida.
-        var response = new
-        {
-            Valor = indicador.Value,
-            Data = indicador.ReferenceDate,
-            Fonte = "Banco de Dados (Cache Miss)"
-        };
-
-        // Salva no Redis para a próxima vez
-        await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(response));
-
-        return Ok(response);
+        return indicator is null
+            ? NotFound("Selic indisponível.")
+            : Ok(new { Valor = indicator.Value, Data = indicator.ReferenceDate });
     }
 }
