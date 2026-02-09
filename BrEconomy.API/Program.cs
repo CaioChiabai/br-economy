@@ -38,9 +38,16 @@ var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL");
 
 if (!string.IsNullOrEmpty(redisUrl))
 {
+    var redisUri = new Uri(redisUrl);
+    var redisPassword = uri.UserInfo.Split(':')[1];
+    var redisHost = uri.Host;
+    var redisPort = uri.Port;
+
+    var configuration = $"{redisHost}:{port},password={redisPassword},ssl=False,abortConnect=False";
+
     builder.Services.AddStackExchangeRedisCache(options =>
     {
-        options.Configuration = redisUrl;
+        options.Configuration = configuration;
         options.InstanceName = "BrEconomy_";
     });
 }
@@ -48,6 +55,7 @@ else
 {
     builder.Services.AddDistributedMemoryCache();
 }
+
 
 // --- 3. Configuração do HttpClient ---
 builder.Services.AddHttpClient("BancoCentral", client =>
