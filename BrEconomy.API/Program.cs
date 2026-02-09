@@ -15,6 +15,8 @@ if (!string.IsNullOrEmpty(databaseUrl))
     var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
 
+    var port = uri.Port > 0 ? uri.Port : 5432;
+
     var connectionString =
         $"Host={uri.Host};" +
         $"Port={uri.Port};" +
