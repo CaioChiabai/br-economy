@@ -27,7 +27,8 @@ if (!string.IsNullOrEmpty(databaseUrl))
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql("DefaultConnection"));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // --- 2. Configuração do Redis ---
 
