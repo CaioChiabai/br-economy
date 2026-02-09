@@ -34,8 +34,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // --- 2. Configuração do Redis ---
 
-var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL")
-               ?? builder.Configuration["Redis:Configuration"];
+var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL");
 
 if (!string.IsNullOrEmpty(redisUrl))
 {
