@@ -114,7 +114,12 @@ namespace BrEconomy.API.Features.Shared
 
             indicator.Value = (decimal)value;
 
-            if (!DateTime.TryParse(referenceDate, out var dataParsed))
+            if (!DateTime.TryParseExact(
+                referenceDate,
+                "dd/MM/yyyy",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out var dataParsed))
             {
                 var mensagem = $"Data inválida retornada pelo BCB: '{referenceDate}'. Abortando atualização.";
                 _logger.LogError(mensagem);
