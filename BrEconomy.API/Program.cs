@@ -39,15 +39,24 @@ var redisUrl = Environment.GetEnvironmentVariable("REDIS_URL");
 if (!string.IsNullOrEmpty(redisUrl))
 {
     var redisUri = new Uri(redisUrl);
-    var redisPassword = uri.UserInfo.Split(':')[1];
-    var redisHost = uri.Host;
-    var redisPort = uri.Port;
+    var redisHost = redisUri.Host;
+    var redisPort = redisUri.Port > 0 ? redisUri.Port : 6379;
 
-    var configuration = $"{redisHost}:{port},password={redisPassword},ssl=False,abortConnect=False";
+    var configParts = $"{redisHost}:{redisPort},abortConnect=False";
+
+    // Adiciona senha se presente na URL (formato redis://:password@host:port)
+    if (!string.IsNullOrEmpty(redisUri.UserInfo))
+    {
+        var password = redisUri.UserInfo.Contains(':')
+            ? redisUri.UserInfo.Split(':')[1]
+            : redisUri.UserInfo;
+        if (!string.IsNullOrEmpty(password))
+            configParts += $",password={password}";
+    }
 
     builder.Services.AddStackExchangeRedisCache(options =>
     {
-        options.Configuration = configuration;
+        options.Configuration = configParts;
         options.InstanceName = "BrEconomy_";
     });
 }
