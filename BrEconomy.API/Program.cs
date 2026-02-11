@@ -56,6 +56,9 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
+Console.WriteLine("DATABASE_URL: " + Environment.GetEnvironmentVariable("DATABASE_URL"));
+Console.WriteLine("REDIS_URL: " + Environment.GetEnvironmentVariable("REDIS_URL"));
+
 
 // --- 3. Configuração do HttpClient ---
 builder.Services.AddHttpClient("BancoCentral", client =>
