@@ -1,14 +1,22 @@
 version: '3.8'
 
 services:
+
+  breconomy.api:
+    build:
+      context: .
+      dockerfile: BrEconomy.API/Dockerfile
+    depends_on:
+      - db
+      - redis
+
   # Banco de Dados
   db:
     image: postgres:15-alpine
-    container_name: breconomy-db
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=breconomy
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: breconomy
     ports:
       - "5432:5432"
     volumes:
@@ -17,7 +25,6 @@ services:
   # Cache
   redis:
     image: redis:alpine
-    container_name: breconomy-redis
     ports:
       - "6379:6379"
 
