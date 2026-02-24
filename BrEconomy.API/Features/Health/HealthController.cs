@@ -135,7 +135,7 @@ public class HealthController : ControllerBase
             if (retrievedValue == testValue)
             {
                 // Verifica se tem a chave da Selic
-                var selicCache = await _cache.GetStringAsync("indicador:selic");
+                var selicCache = await _cache.GetStringAsync("indicador:selic:current");
                 
                 return new HealthCheckResult(
                     Status: "Healthy",
