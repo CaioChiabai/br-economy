@@ -19,7 +19,7 @@ namespace BrEconomy.API.Features.Shared
         protected abstract string Url { get; }
         protected abstract string CacheKey { get; }
         protected virtual TimeSpan UpdateInterval => TimeSpan.FromHours(24);
-        protected virtual TimeSpan InitialDelay => TimeSpan.FromSeconds(10);
+        protected virtual TimeSpan InitialDelay => TimeSpan.FromSeconds(2);
 
         protected GenericIndicatorUpdateJob(
             IServiceProvider serviceProvider,
