@@ -11,9 +11,16 @@
 
 BrEconomy é uma API RESTful que fornece acesso simplificado aos principais indicadores econômicos do Brasil, consumindo dados oficiais do **Banco Central do Brasil (BCB)**. O projeto foi desenvolvido com foco em **performance**, **escalabilidade** e **manutenibilidade**, utilizando as melhores práticas de desenvolvimento de software.
 
+## Ambiente de Produção
+
+- **Base URL**: `https://br-economy.onrender.com`
+- **API**: hospedada no **Render**
+- **Cache Redis**: hospedado no **Render**
+- **Banco PostgreSQL**: hospedado no **Neon**
+
 ### Diferenciais
 
-- **Alta Performance**: Cache inteligente com Redis garante respostas em menos de 5ms
+- **Alta Performance**: cache distribuído com Redis para reduzir latência
 - **Atualização Automática**: Background jobs mantêm os dados sempre atualizados
 - **Arquitetura Limpa**: Design pattern orientado a reutilização e baixo acoplamento
 - **Zero Duplicação**: Arquitetura genérica elimina código repetitivo
@@ -51,10 +58,14 @@ Request → Redis (< 5ms) → PostgreSQL (Fallback) → BCB API (Cold Start)
 ```
 
 **Benefícios:**
-- **Performance**: 99% das requisições servidas do cache
+- **Performance**: prioridade de leitura no cache
 - **Resiliência**: Banco como fallback se Redis cair
 - **Economia**: Reduz requisições à API do BCB
 - **UX**: Latência consistente e previsível
+
+**Observação importante:**
+- Na ausência de cache, a API responde via banco e retorna o header `Data-Source: database`.
+- Quando a resposta vem do cache, retorna `Data-Source: cache`.
 
 #### **3. Background Services Independentes**
 
@@ -79,10 +90,10 @@ Cada indicador possui seu próprio `BackgroundService`:
 - **Docker & Docker Compose** - Containerização
 
 ### Padrões e Práticas
-- **Clean Architecture** - Separação de responsabilidades
-- **Repository Pattern** - Abstração de dados
+- **Arquitetura por Features** - Separação por contexto funcional
 - **Dependency Injection** - Inversão de controle
 - **Template Method Pattern** - Jobs genéricos
+- **Fallback de Configuração por Ambiente** - `env var` em produção e `appsettings` no ambiente local
 
 ---
 
@@ -103,36 +114,37 @@ Cada indicador possui seu próprio `BackgroundService`:
 
 ### Pré-requisitos
 
+- [Visual Studio 2022+](https://visualstudio.microsoft.com/) com suporte a Docker
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (opcional, para desenvolvimento)
 
-### Opção 1: Docker Compose (Recomendado)
+### Opção Única (Recomendada): Docker Compose pelo Visual Studio
 
 ```bash
 # Clone o repositório
 git clone https://github.com/CaioChiabai/br-economy.git
 cd br-economy
-
-# Suba toda a stack (API + PostgreSQL + Redis)
-docker-compose up -d
-
-# Aguarde ~10 segundos para primeira carga dos dados
 ```
 
-A API estará disponível em: `http://localhost:8080`
+Passos no Visual Studio:
 
-### Opção 2: Desenvolvimento Local
+1. Abra a solução `BrEconomy.slnx`.
+2. Defina **Docker Compose** como projeto de inicialização.
+3. Pressione **F5** (ou clique em **Start Debugging**).
+
+Isso sobe automaticamente os 3 serviços locais:
+- `breconomy.api`
+- `db` (PostgreSQL)
+- `redis`
+
+URLs locais:
+- API: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger`
+
+### Execução via terminal (alternativa)
 
 ```bash
-# Suba apenas as dependências
-docker-compose up postgres redis -d
-
-# Execute a API
-cd BrEconomy.API
-dotnet run
-
-# Ou com hot reload
-dotnet watch run
+# Sobe API + PostgreSQL + Redis
+docker compose up -d
 ```
 
 ---
@@ -160,8 +172,15 @@ Retorna o CDI acumulado no ano
 ### **GET** `/api/v1/indicators/dolar/current`
 Retorna a cotação atual do dólar PTAX
 
-### **GET** `/api/v1/health`
+### **GET** `/api/health`
 Health check da aplicação
+
+### Header de observabilidade
+
+Nos endpoints de indicadores, a API informa a origem da resposta:
+
+- `Data-Source: cache`
+- `Data-Source: database`
 
 ---
 
@@ -184,6 +203,11 @@ graph LR
 3. Validam e persistem no PostgreSQL
 4. Atualizam cache no Redis (TTL: 25h)
 5. Requisições servidas diretamente do cache
+
+### Configuração por Ambiente
+
+- **Banco**: usa `DATABASE_URL` quando disponível; em local usa `ConnectionStrings:DefaultConnection`.
+- **Redis**: usa `REDIS_URL` quando disponível; em local usa `Redis:Configuration`.
 
 ### Estratégia de Resiliência
 
@@ -226,11 +250,13 @@ BrEconomy.API/
 
 ```bash
 # Teste com curl
-curl http://localhost:8080/api/v1/indicators/selic/current
+curl -i http://localhost:8080/api/v1/indicators/selic/current
 
 # Ou use o arquivo .http incluído no projeto
 # (compatível com VS Code REST Client)
 ```
+
+Com `-i`, você também visualiza o header `Data-Source`.
 
 ## Contribuindo
 
