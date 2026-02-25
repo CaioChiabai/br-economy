@@ -25,6 +25,7 @@ namespace BrEconomy.API.Features.Dollar
             var cached = await _cache.GetStringAsync("indicador:dolar:current");
             if (!string.IsNullOrEmpty(cached))
             {
+                Response.Headers["Data-Source"] = "cache";
                 return Ok(JsonSerializer.Deserialize<object>(cached));
             }
 
@@ -32,6 +33,8 @@ namespace BrEconomy.API.Features.Dollar
             var indicator = await _context.EconomicIndicators
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Name == "DOLAR");
+
+            Response.Headers["Data-Source"] = "database";
 
             return indicator is null
                 ? NotFound("Dolar indisponível.")

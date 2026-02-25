@@ -25,6 +25,7 @@ namespace BrEconomy.API.Features.CDI
             var cached = await _cache.GetStringAsync("indicador:cdi:ytd");
             if (!string.IsNullOrEmpty(cached))
             {
+                Response.Headers["Data-Source"] = "cache";
                 return Ok(JsonSerializer.Deserialize<object>(cached));
             }
 
@@ -32,6 +33,8 @@ namespace BrEconomy.API.Features.CDI
             var indicator = await _context.EconomicIndicators
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Name == "CDI_YTD");
+
+            Response.Headers["Data-Source"] = "database";
 
             return indicator is null
                 ? NotFound("CDI indisponível.")
@@ -44,6 +47,7 @@ namespace BrEconomy.API.Features.CDI
             var cached = await _cache.GetStringAsync("indicador:cdi:12m");
             if (!string.IsNullOrEmpty(cached))
             {
+                Response.Headers["Data-Source"] = "cache";
                 return Ok(JsonSerializer.Deserialize<object>(cached));
             }
 
@@ -51,6 +55,8 @@ namespace BrEconomy.API.Features.CDI
             var indicator = await _context.EconomicIndicators
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Name == "CDI_12M");
+
+            Response.Headers["Data-Source"] = "database";
 
             return indicator is null
                 ? NotFound("CDI indisponível.")

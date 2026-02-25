@@ -25,6 +25,7 @@ public class SelicController : ControllerBase
         var cached = await _cache.GetStringAsync("indicador:selic:current");
         if (!string.IsNullOrEmpty(cached))
         {
+            Response.Headers["Data-Source"] = "cache";
             return Ok(JsonSerializer.Deserialize<object>(cached));
         }
 
@@ -32,6 +33,8 @@ public class SelicController : ControllerBase
         var indicator = await _context.EconomicIndicators
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Name == "SELIC");
+
+        Response.Headers["Data-Source"] = "database";
 
         return indicator is null
             ? NotFound("Selic indisponível.")
