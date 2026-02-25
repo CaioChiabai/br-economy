@@ -70,7 +70,14 @@ if (!string.IsNullOrEmpty(redisUrl))
 }
 else
 {
-    builder.Services.AddDistributedMemoryCache();
+    // LOCAL (Docker / Dev)
+    var redisConfiguration = builder.Configuration["Redis:Configuration"];
+
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConfiguration;
+        options.InstanceName = "BrEconomy_";
+    });
 }
 
 // --- 3. Configuração do HttpClient ---
@@ -92,15 +99,16 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configuração do Pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseAuthorization();
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/", () => Results.Redirect("/swagger"));
+}
 
 using (var scope = app.Services.CreateScope())
 {
