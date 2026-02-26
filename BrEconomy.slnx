@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../br-economy.Tests/br-economy.Tests.csproj" Id="3051927f-bd07-4527-aa40-d56ce20fc8f1" />
   <Project Path="BrEconomy.API/BrEconomy.API.csproj" />
   <Project Path="docker-compose.dcproj">
     <Build />
